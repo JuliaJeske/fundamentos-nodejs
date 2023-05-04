@@ -25,16 +25,28 @@ export const routes = [
     path: buildRoutePath('/tasks'),
     handler: (req,res) => {
       const { title, description} = req.body
+      if (!title) {
+        return res.writeHead(400).end(
+          JSON.stringify({ message: 'title is required' }),
+        )
+      }
+
+      if (!description) {
+        return res.writeHead(400).end(
+          JSON.stringify({message: 'description is required' })
+        )
+      }
       const tasks = {
         id: randomUUID(),
-        created_at: null,
-        updated_at: null,
+        created_at: new Date(),
+        updated_at: new Date(),
         completed_at: null,
         title,
         description,
       }
       database.insert('tasks', tasks)
       return res.writeHead(201).end()
+      //writeHead - é responsável por escrever o cabeçalho da resposta http
     }
   },
   {
@@ -43,7 +55,22 @@ export const routes = [
     handler: (req,res) => {
       const {id} = req.params
       const {title, description} = req.body
-      database.update('tasks', id,{title, description})
+      if (!title || !description) {
+        return res.writeHead(400).end(
+          JSON.stringify({ message: 'title or description are required' })
+        )
+      }
+      const [task] = database.select('tasks', { id })
+      
+      if (!task) {
+        return res.writeHead(404).end()
+      }
+
+      database.update('tasks', id,{
+        title, 
+        description, 
+        updated_at: new Date()
+      })
       return res.writeHead(204).end()
     },
   },
@@ -52,18 +79,29 @@ export const routes = [
     path: buildRoutePath('/tasks/:id'),
     handler: (req,res) => {
       const { id } = req.params
-      database.delete('tasks',id)
+      const [task] = database.select('tasks', { id })
+      if (!task) {
+        return res.writeHead(404).end()
+      }
+
+      database.delete('tasks', id)
       return res.writeHead(204).end()
     },
   },
-  //todo: patch
   {
     method: 'PATCH',
     path: buildRoutePath('/tasks/:id/complete'),
     handler: (req,res) => {
       const {id} = req.params
-      const {completed_at} = req.body
-      database.update('tasks', id,{completed_at})
+      const [task] = database.select('tasks', { id })
+      if (!task) {
+        return res.writeHead(404).end()
+      }
+      const isTaskCompleted = !!task.completed_at
+      const completed_at = isTaskCompleted ? null : new Date()
+
+      database.update('tasks', id, { completed_at })
+
       return res.writeHead(204).end()
     },
   },

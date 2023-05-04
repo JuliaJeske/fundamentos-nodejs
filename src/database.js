@@ -25,6 +25,7 @@ export class Database {
     if(search) {
       data = data.filter(row => {
         return Object.entries(search).some(([key,value])=> {
+          if (!value) return true
           return row[key].includes(value)
         })
       })
@@ -41,7 +42,7 @@ export class Database {
     this.#persist();
     return data;
   }
-  update(table,id, data) { //todo : ver outros params atualizados
+  update(table,id, data) { 
     const rowIndex = this.#database[table].findIndex(row => row.id === id)
 
     if(rowIndex > -1) {
